@@ -41,10 +41,30 @@ export default function HistoryPage() {
   const loadHistory = useCallback(async () => {
     try {
       setIsLoading(true)
-      const data = await api.get<PayrollPeriod[]>('/payrolls/history', {
+      const data = await api.get<any[]>('/payrolls', {
         params: { month: selectedMonth, year: selectedYear }
       })
-      setPeriods(Array.isArray(data) ? data : [])
+      // GET /payrolls retourne les périodes avec leurs bulletins imbriqués :
+      // on aplatit en PayrollPeriod avec les totaux réels calculés côté client
+      const mapped: PayrollPeriod[] = (Array.isArray(data) ? data : [])
+        .filter((p: any) => p.month === selectedMonth && p.year === selectedYear)
+        .map((p: any) => {
+          const slips: any[] = Array.isArray(p.payslips) ? p.payslips : []
+          const totalGross = slips.reduce((s: number, ps: any) => s + (Number(ps.gross_salary) || 0), 0)
+          const totalNet = slips.reduce((s: number, ps: any) => s + (Number(ps.net_payable) || 0), 0)
+          return {
+            id: p.id,
+            month: p.month,
+            year: p.year,
+            status: p.status || 'draft',
+            totalGrossSalary: totalGross,
+            totalNetSalary: totalNet,
+            employeeCount: slips.length,
+            createdAt: p.created_at || p.createdAt || '',
+            validatedAt: p.closed_at || p.validatedAt,
+          }
+        })
+      setPeriods(mapped)
     } catch (error) {
       console.error('Error loading history:', error)
       setPeriods([])

@@ -34,6 +34,8 @@ export default function CalculationPage() {
   const [calculations, setCalculations] = useState<PayrollCalculation[]>([])
   const [legalRates, setLegalRates] = useState<{ cnss_employee_rate: number; cnss_employer_rate: number } | null>(null)
   const [usdCdfRate, setUsdCdfRate] = useState<number>(2800)
+  const [company, setCompany] = useState<any | null>(null)
+  const [payslipIds, setPayslipIds] = useState<Record<string, string>>({})
 
   // Chargement des salariés actifs
   const loadEmployees = useCallback(async () => {
@@ -49,6 +51,13 @@ export default function CalculationPage() {
 
   useEffect(() => {
     loadEmployees()
+    // Chargement de l'entreprise pour les en-têtes de bulletin PDF
+    api.get<any[]>('/companies')
+      .then((data) => {
+        const list = Array.isArray(data) ? data : []
+        if (list.length > 0) setCompany(list[0])
+      })
+      .catch(() => {})
   }, [loadEmployees])
 
   // Lancement du calcul de paie via le moteur NestJS
@@ -182,8 +191,24 @@ export default function CalculationPage() {
     const toastId = toast.loading('Validation et clôture du mois de paie...')
 
     try {
-      // Clôture ou enregistrement du payroll
-      toast.success('Mois de paie validé et conforme au barème fiscal RDC', { id: toastId })
+      // Persiste réellement la paie et les bulletins en base (Supabase)
+      const res = await api.post<any>('/payrolls/save-month', {
+        month: parseInt(selectedMonth, 10),
+        year: parseInt(selectedYear, 10),
+        usd_cdf_rate: usdCdfRate,
+        status: 'closed',
+        calculations,
+      })
+
+      // Mémorise les IDs des bulletins persistés pour les exports PDF
+      const map: Record<string, string> = {}
+      const saved = res?.payslips || []
+      saved.forEach((ps: any) => {
+        if (ps?.employee_id) map[ps.employee_id] = ps.id
+      })
+      setPayslipIds(map)
+
+      toast.success(res?.message || 'Mois de paie validé et archivé', { id: toastId })
     } catch (err: any) {
       toast.error(err?.message || 'Erreur lors de la validation', { id: toastId })
     } finally {
@@ -201,8 +226,53 @@ export default function CalculationPage() {
         { month: 'long' }
       )
       const filename = `bulletin-${employeeName}-${monthName}-${selectedYear}.pdf`
-      
-      await api.download(`/pdf/payslip/${calc.employeeId}`, filename)
+
+      const savedPayslipId = payslipIds[calc.employeeId]
+      if (savedPayslipId) {
+        // Bulletin persisté : le backend lit les données réelles en base
+        await api.download(`/pdf/payslip/${savedPayslipId}`, filename)
+      } else {
+        // Simulation non clôturée : on transmet les données réelles du calcul
+        const emp = employees.find((e) => e.id === calc.employeeId)
+        const nameParts = calc.employeeName.trim().split(/\s+/)
+        const pdfData = {
+          company: {
+            name: company?.name || 'Société',
+            address: company?.address,
+            nif: company?.nif,
+            cnss_number: company?.cnss_number,
+          },
+          employee: {
+            first_name: emp?.firstName || nameParts.slice(1).join(' ') || '',
+            last_name: emp?.lastName || nameParts[0] || '',
+            position: emp?.position,
+            cnss_number: emp?.cnssNumber,
+          },
+          payroll: {
+            month: parseInt(selectedMonth, 10),
+            year: parseInt(selectedYear, 10),
+            usd_cdf_rate: usdCdfRate,
+          },
+          payslip: {
+            base_salary: calc.baseSalary,
+            bonuses: calc.primes,
+            overtime: calc.overtime,
+            absences_deductions: calc.absences,
+            advances: calc.advances,
+            gross_salary: calc.grossSalary,
+            cnss_employee: calc.cnssEmployee,
+            ipr: calc.ipr,
+            net_payable: calc.netSalary,
+            cnss_employer: calc.cnssEmployer,
+            salary_currency: (calc.currency === 'CDF' || calc.currency === 'FC' ? 'CDF' : 'USD') as 'USD' | 'CDF',
+          },
+          items: calc.items || [],
+        }
+        await api.download('/pdf/generate', filename, {
+          method: 'POST',
+          body: JSON.stringify(pdfData),
+        })
+      }
       toast.success('Bulletin téléchargé avec succès', { id: toastId })
     } catch (err: any) {
       toast.error(err?.message || 'Erreur lors du téléchargement', { id: toastId })

@@ -150,6 +150,7 @@ export const api = {
     }
 
     const defaultHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(headers as Record<string, string>),
     };
