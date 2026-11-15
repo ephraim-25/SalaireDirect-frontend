@@ -1,10 +1,10 @@
 /**
  * Client API pour SalaireDirect Frontend
- * Connecté au backend NestJS (http://localhost:3000/api/v1)
+ * Connecté au backend NestJS via NEXT_PUBLIC_API_URL
  */
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL === 'production' ? 'https://salairedirect-backend.onrender.com/api/v1' : 'http://localhost:3000/api/v1'; 
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
 export interface FetchOptions extends RequestInit {
   token?: string;
@@ -97,7 +97,7 @@ async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promis
     // Erreur de connexion réseau (ex: serveur non démarré ou coupure mobile)
     throw new ApiError(
       error?.message === 'Failed to fetch'
-        ? 'Impossible de contacter le serveur. Vérifiez que le backend est démarré sur le port 3000.'
+        ? 'Impossible de contacter le serveur backend.'
         : error?.message || 'Erreur réseau inattendue',
       0,
     );
