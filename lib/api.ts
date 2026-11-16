@@ -1,187 +1,152 @@
 /**
- * Client API pour SalaireDirect Frontend
- * Connecté au backend NestJS (http://localhost:3000/api/v1)
+ * Client API de SalaireDirect (backend NestJS hébergé sur Render).
+ * Le jeton d'accès Supabase de la session en cours est envoyé à chaque requête.
  */
+import { supabase } from '@/lib/supabase'
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1').replace(/\/+$/, '')
 
-export interface FetchOptions extends RequestInit {
-  token?: string;
-  params?: Record<string, string | number | boolean | undefined>;
+/** Render (offre gratuite) peut mettre ~1 minute à se réveiller après une période d'inactivité. */
+const REQUEST_TIMEOUT_MS = 60_000
+
+type QueryParams = Record<string, string | number | boolean | undefined | null>
+
+export interface FetchOptions extends Omit<RequestInit, 'body'> {
+  token?: string
+  params?: QueryParams
 }
 
 export class ApiError extends Error {
-  statusCode: number;
-  data: any;
+  statusCode: number
+  data: unknown
 
-  constructor(message: string, statusCode: number = 500, data: any = null) {
-    super(message);
-    this.name = 'ApiError';
-    this.statusCode = statusCode;
-    this.data = data;
+  constructor(message: string, statusCode = 500, data: unknown = null) {
+    super(message)
+    this.name = 'ApiError'
+    this.statusCode = statusCode
+    this.data = data
   }
 }
 
-async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
-  const { token, params, headers, ...customOptions } = options;
+async function getAccessToken(explicit?: string): Promise<string | undefined> {
+  if (explicit) return explicit
+  if (typeof window === 'undefined') return undefined
+  const { data } = await supabase.auth.getSession()
+  return data.session?.access_token
+}
 
-  // Récupérer le token stocké (localStorage côté navigateur) ou le token fourni
-  let authToken = token;
-  if (!authToken && typeof window !== 'undefined') {
-    authToken = localStorage.getItem('token') || localStorage.getItem('supabase_token') || undefined;
+function buildUrl(endpoint: string, params?: QueryParams): string {
+  const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  const search = new URLSearchParams()
+  Object.entries(params ?? {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') search.append(key, String(value))
+  })
+  const query = search.toString()
+  return `${API_BASE_URL}${path}${query ? `?${query}` : ''}`
+}
+
+function networkError(error: unknown): ApiError {
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return new ApiError(
+      'Le serveur met plus de temps que prévu à répondre (il est peut-être en cours de démarrage). Réessayez dans quelques instants.',
+      0
+    )
   }
+  const hint =
+    process.env.NODE_ENV === 'development'
+      ? ` (API : ${API_BASE_URL})`
+      : ''
+  return new ApiError(`Impossible de contacter le serveur. Vérifiez votre connexion internet puis réessayez.${hint}`, 0)
+}
 
-  // Construction de l'URL avec query parameters
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  let url = `${API_BASE_URL}${cleanEndpoint}`;
+async function request(endpoint: string, options: FetchOptions & { body?: BodyInit | null } = {}): Promise<Response> {
+  const { token, params, headers, ...init } = options
+  const accessToken = await getAccessToken(token)
 
-  if (params) {
-    const searchParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        searchParams.append(key, String(value));
-      }
-    });
-    const queryString = searchParams.toString();
-    if (queryString) {
-      url += (url.includes('?') ? '&' : '?') + queryString;
-    }
-  }
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
-  const defaultHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-    ...(headers as Record<string, string>),
-  };
-
+  let response: Response
   try {
-    const response = await fetch(url, {
-      headers: defaultHeaders,
-      ...customOptions,
-    });
-
-    if (!response.ok) {
-      let errorMessage = 'Une erreur est survenue lors de la communication avec le serveur.';
-      let errorData: any = null;
-
-      try {
-        errorData = await response.json();
-        if (errorData) {
-          if (Array.isArray(errorData.message)) {
-            errorMessage = errorData.message.join(', ');
-          } else if (errorData.message) {
-            errorMessage = errorData.message;
-          } else if (errorData.error) {
-            errorMessage = errorData.error;
-          }
-        }
-      } catch {
-        errorMessage = `Erreur HTTP ${response.status}: ${response.statusText}`;
-      }
-
-      throw new ApiError(errorMessage, response.status, errorData);
-    }
-
-    // Gestion des réponses sans contenu (204 No Content)
-    if (response.status === 204) {
-      return {} as T;
-    }
-
-    return await response.json();
-  } catch (error: any) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    // Erreur de connexion réseau (ex: serveur non démarré ou coupure mobile)
-    throw new ApiError(
-      error?.message === 'Failed to fetch'
-        ? 'Impossible de contacter le serveur. Vérifiez que le backend est démarré sur le port 3000.'
-        : error?.message || 'Erreur réseau inattendue',
-      0,
-    );
+    response = await fetch(buildUrl(endpoint, params), {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...(headers as Record<string, string> | undefined),
+      },
+    })
+  } catch (error) {
+    throw networkError(error)
+  } finally {
+    clearTimeout(timer)
   }
+
+  if (!response.ok) {
+    let message = `Erreur ${response.status}. Veuillez réessayer.`
+    let data: unknown = null
+    try {
+      data = await response.json()
+      const body = data as { message?: string | string[]; error?: string } | null
+      if (Array.isArray(body?.message)) message = body.message.join(', ')
+      else if (body?.message) message = body.message
+      else if (body?.error) message = body.error
+    } catch {
+      /* corps non JSON : on garde le message générique */
+    }
+
+    if (response.status === 401 && typeof window !== 'undefined') {
+      message = 'Votre session a expiré. Veuillez vous reconnecter.'
+      await supabase.auth.signOut()
+      const redirect = encodeURIComponent(window.location.pathname)
+      // Rechargement complet volontaire : réinitialise tout l'état de l'application après expiration de session.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign(`/auth/login?redirect=${redirect}`)
+    }
+    throw new ApiError(message, response.status, data)
+  }
+
+  return response
+}
+
+async function fetchApi<T>(endpoint: string, options: FetchOptions & { body?: BodyInit | null } = {}): Promise<T> {
+  const response = await request(endpoint, options)
+  if (response.status === 204) return {} as T
+  return (await response.json()) as T
 }
 
 export const api = {
-  get: <T>(endpoint: string, options?: FetchOptions) =>
-    fetchApi<T>(endpoint, { method: 'GET', ...options }),
+  get: <T>(endpoint: string, options?: FetchOptions) => fetchApi<T>(endpoint, { ...options, method: 'GET' }),
 
-  post: <T>(endpoint: string, data?: any, options?: FetchOptions) =>
+  post: <T>(endpoint: string, data?: unknown, options?: FetchOptions) =>
     fetchApi<T>(endpoint, {
+      ...options,
       method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
-      ...options,
+      body: data === undefined ? undefined : JSON.stringify(data),
     }),
 
-  put: <T>(endpoint: string, data?: any, options?: FetchOptions) =>
+  put: <T>(endpoint: string, data?: unknown, options?: FetchOptions) =>
     fetchApi<T>(endpoint, {
-      method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
       ...options,
+      method: 'PUT',
+      body: data === undefined ? undefined : JSON.stringify(data),
     }),
 
-  delete: <T>(endpoint: string, options?: FetchOptions) =>
-    fetchApi<T>(endpoint, { method: 'DELETE', ...options }),
+  delete: <T>(endpoint: string, options?: FetchOptions) => fetchApi<T>(endpoint, { ...options, method: 'DELETE' }),
 
+  /** Télécharge un fichier (ex. PDF) renvoyé par l'API. */
   download: async (endpoint: string, filename: string, options?: FetchOptions) => {
-    const { token, headers, ...customOptions } = options || {};
-
-    let authToken = token;
-    if (!authToken && typeof window !== 'undefined') {
-      authToken = localStorage.getItem('token') || localStorage.getItem('supabase_token') || undefined;
-    }
-
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    let url = `${API_BASE_URL}${cleanEndpoint}`;
-
-    if (options?.params) {
-      const searchParams = new URLSearchParams();
-      Object.entries(options.params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          searchParams.append(key, String(value));
-        }
-      });
-      const queryString = searchParams.toString();
-      if (queryString) {
-        url += (url.includes('?') ? '&' : '?') + queryString;
-      }
-    }
-
-    const defaultHeaders: Record<string, string> = {
-      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-      ...(headers as Record<string, string>),
-    };
-
-    try {
-      const response = await fetch(url, {
-        headers: defaultHeaders,
-        ...customOptions,
-      });
-
-      if (!response.ok) {
-        throw new ApiError(`Erreur de téléchargement: ${response.statusText}`, response.status);
-      }
-
-      const blob = await response.blob();
-      const link = document.createElement('a');
-      link.href = window.URL.createObjectURL(blob);
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(link.href);
-    } catch (error: any) {
-      if (error instanceof ApiError) {
-        throw error;
-      }
-      throw new ApiError(
-        error?.message === 'Failed to fetch'
-          ? 'Impossible de contacter le serveur.'
-          : error?.message || 'Erreur de téléchargement',
-        0,
-      );
-    }
+    const response = await request(endpoint, { ...options, method: 'GET', headers: { Accept: '*/*', ...(options?.headers as Record<string, string> | undefined) } })
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   },
-};
+}

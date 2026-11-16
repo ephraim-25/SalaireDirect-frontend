@@ -2,26 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * L'interface est conçue en thème clair uniquement. L'ancien bloc
+ * `prefers-color-scheme: dark` rendait le texte quasi blanc sur des cartes
+ * blanches (illisible) pour les personnes dont l'appareil est en mode sombre.
+ */
 :root {
+  color-scheme: light;
   --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground: #111827;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Indicateur de focus visible partout (WCAG 2.4.7) */
+:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+/* Respecte la préférence « réduire les animations » (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @layer utilities {

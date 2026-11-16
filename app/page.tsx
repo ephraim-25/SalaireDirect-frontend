@@ -1,229 +1,174 @@
-'use client'
-
-import { CheckCircle, Shield, FileText, Users, ArrowRight, Lock } from 'lucide-react'
 import Link from 'next/link'
+import { ArrowRight, CheckCircle, FileText, Shield, Users } from 'lucide-react'
+
+const FEATURES = [
+  {
+    icon: Shield,
+    iconColor: 'text-blue-300',
+    iconBg: 'bg-blue-500/10',
+    title: 'Calculs IPR et CNSS automatiques',
+    text: 'Barème IPR progressif, cotisations CNSS salariale et patronale et déductions pour enfants à charge appliqués automatiquement.',
+  },
+  {
+    icon: FileText,
+    iconColor: 'text-green-300',
+    iconBg: 'bg-green-500/10',
+    title: 'Bulletins de paie en PDF',
+    text: 'Générez des bulletins de paie clairs, prêts à être remis à vos salariés.',
+  },
+  {
+    icon: Users,
+    iconColor: 'text-purple-300',
+    iconBg: 'bg-purple-500/10',
+    title: 'Gestion multi-salariés',
+    text: 'Gérez vos effectifs, saisissez les variables mensuelles (primes, heures supplémentaires, absences) et retrouvez tout l’historique.',
+  },
+]
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Header */}
-      <header className="border-b border-slate-700/50 backdrop-blur-sm bg-slate-900/50 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <FileText className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-white">SalaireDirect</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <Link
-                href="/auth/login"
-                className="text-slate-300 hover:text-white transition-colors text-sm font-medium"
-              >
-                Se connecter
-              </Link>
-              <Link
-                href="/auth/register"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              >
-                Essai gratuit (7 jours)
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+      <a
+        href="#contenu"
+        className="sr-only z-[60] rounded-lg bg-white px-4 py-2 font-medium text-blue-800 focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >
+        Aller au contenu principal
+      </a>
 
-      {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
-        <div className="text-center">
-          <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-2 mb-8">
-            <Shield className="w-4 h-4 text-blue-400" />
-            <span className="text-blue-300 text-sm font-medium">Conforme au Code Général des Impôts RDC</span>
-          </div>
-          
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-            Automatisez votre paie en RDC
-            <br />
-            <span className="text-blue-400">en toute conformité légale</span>
-          </h1>
-          
-          <p className="text-lg sm:text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
-            Solution SaaS de gestion de la paie pour les PME, écoles et ONG. 
-            Calculs IPR/CNSS automatiques, bulletins PDF en 1 clic, essai gratuit 7 jours.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/auth/register"
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl text-lg font-semibold transition-all hover:scale-105 flex items-center justify-center gap-2"
-            >
-              Démarrer l'essai gratuit
-              <ArrowRight className="w-5 h-5" />
-            </Link>
+      <header className="sticky top-0 z-50 border-b border-slate-700/50 bg-slate-900/90 backdrop-blur-sm">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600" aria-hidden="true">
+              <FileText className="h-5 w-5 text-white" />
+            </span>
+            <span className="text-xl font-bold">SalaireDirect</span>
+          </Link>
+          <nav aria-label="Accès au compte" className="flex items-center gap-2 sm:gap-4">
             <Link
               href="/auth/login"
-              className="w-full sm:w-auto bg-slate-700 hover:bg-slate-600 text-white px-8 py-4 rounded-xl text-lg font-semibold transition-colors flex items-center justify-center"
+              className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-slate-200 hover:text-white"
             >
               Se connecter
             </Link>
-          </div>
-
-          <div className="flex items-center justify-center gap-6 mt-8 text-sm text-slate-400">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-400" />
-              <span>Sans carte bancaire</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-400" />
-              <span>Annulation à tout moment</span>
-            </div>
-          </div>
+            <Link
+              href="/auth/register"
+              className="inline-flex min-h-11 items-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-500"
+            >
+              Essai gratuit
+              <span className="sr-only"> de 7 jours</span>
+            </Link>
+          </nav>
         </div>
-      </section>
+      </header>
 
-      {/* Features Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            Pourquoi choisir SalaireDirect ?
-          </h2>
-          <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-            Une solution conçue pour simplifier la paie en RD Congo
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Feature 1 */}
-          <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 hover:border-blue-500/50 transition-colors">
-            <div className="w-14 h-14 bg-blue-500/10 rounded-xl flex items-center justify-center mb-6">
-              <Shield className="w-7 h-7 text-blue-400" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-3">
-              Calculs légaux RDC exacts
-            </h3>
-            <p className="text-slate-400">
-              Barème IPR à 8 tranches, CNSS salariale (3,5%) et patronale (5,9%) appliqués automatiquement selon le Code Général des Impôts.
+      <main id="contenu">
+        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-28">
+          <div className="text-center">
+            <p className="mb-8 inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-200">
+              <Shield className="h-4 w-4" aria-hidden="true" />
+              Pensé pour la réglementation de la RD Congo (IPR, CNSS)
             </p>
-          </div>
 
-          {/* Feature 2 */}
-          <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 hover:border-blue-500/50 transition-colors">
-            <div className="w-14 h-14 bg-green-500/10 rounded-xl flex items-center justify-center mb-6">
-              <FileText className="w-7 h-7 text-green-400" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-3">
-              Bulletins PDF en 1 clic
-            </h3>
-            <p className="text-slate-400">
-              Générez instantanément des bulletins de paie professionnels conformes aux normes, prêts à distribuer à vos salariés.
+            <h1 className="mb-6 text-balance text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
+              Automatisez votre paie en RDC
+              <br />
+              <span className="text-blue-300">sans erreur de calcul</span>
+            </h1>
+
+            <p className="mx-auto mb-10 max-w-2xl text-lg text-slate-200 sm:text-xl">
+              Solution de gestion de la paie pour les PME, écoles et ONG. Calculs IPR et CNSS automatiques, bulletins PDF
+              en un clic, essai gratuit de 7 jours.
             </p>
-          </div>
 
-          {/* Feature 3 */}
-          <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 hover:border-blue-500/50 transition-colors">
-            <div className="w-14 h-14 bg-purple-500/10 rounded-xl flex items-center justify-center mb-6">
-              <Users className="w-7 h-7 text-purple-400" />
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link
+                href="/auth/register"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-8 py-4 text-lg font-semibold text-white hover:bg-blue-500 sm:w-auto"
+              >
+                Démarrer l&apos;essai gratuit
+                <ArrowRight className="h-5 w-5" aria-hidden="true" />
+              </Link>
+              <Link
+                href="/auth/login"
+                className="flex w-full items-center justify-center rounded-xl bg-slate-700 px-8 py-4 text-lg font-semibold text-white hover:bg-slate-600 sm:w-auto"
+              >
+                Se connecter
+              </Link>
             </div>
-            <h3 className="text-xl font-bold text-white mb-3">
-              Gestion multi-salariés
-            </h3>
-            <p className="text-slate-400">
-              Gérez facilement vos effectifs, saisissez les variables mensuelles (primes, heures sup, absences) et centralisez l'historique.
-            </p>
+
+            <ul className="mt-8 flex flex-col items-center justify-center gap-3 text-sm text-slate-300 sm:flex-row sm:gap-6">
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-400" aria-hidden="true" />
+                Sans carte bancaire
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-400" aria-hidden="true" />
+                Essai de 7 jours
+              </li>
+            </ul>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* CTA Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-3xl p-8 sm:p-12 lg:p-16 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            Prêt à simplifier votre paie ?
-          </h2>
-          <p className="text-blue-100 text-lg mb-8 max-w-2xl mx-auto">
-            Rejoignez les entreprises qui font confiance à SalaireDirect pour gérer leur paie en toute sérénité.
-          </p>
-          <Link
-            href="/auth/register"
-            className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-blue-50 transition-colors"
-          >
-            Commencer l'essai gratuit
-            <ArrowRight className="w-5 h-5" />
-          </Link>
-        </div>
-      </section>
+        <section aria-labelledby="pourquoi" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="mb-14 text-center">
+            <h2 id="pourquoi" className="mb-4 text-3xl font-bold sm:text-4xl">
+              Pourquoi choisir SalaireDirect ?
+            </h2>
+            <p className="mx-auto max-w-2xl text-lg text-slate-300">Une solution conçue pour simplifier la paie en RD Congo.</p>
+          </div>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-700/50 bg-slate-900/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <div className="md:col-span-2">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-white" />
+          <ul className="grid grid-cols-1 gap-8 md:grid-cols-3">
+            {FEATURES.map((feature) => (
+              <li key={feature.title} className="rounded-2xl border border-slate-700/60 bg-slate-800/50 p-8">
+                <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-xl ${feature.iconBg}`} aria-hidden="true">
+                  <feature.icon className={`h-7 w-7 ${feature.iconColor}`} />
                 </div>
-                <span className="text-xl font-bold text-white">SalaireDirect</span>
-              </div>
-              <p className="text-slate-400 text-sm max-w-md">
-                Solution SaaS de gestion de la paie conforme aux normes légales de la RD Congo. 
-                Simplifiez votre paie, restez conforme.
-              </p>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Produit</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
-                <li>
-                  <Link href="#" className="hover:text-white transition-colors">
-                    Fonctionnalités
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white transition-colors">
-                    Tarification
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white transition-colors">
-                    Conformité RDC
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Support</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
-                <li>
-                  <Link href="#" className="hover:text-white transition-colors">
-                    Centre d'aide
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white transition-colors">
-                    Contact
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-white transition-colors">
-                    FAQ
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-slate-700/50 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-slate-400 text-sm">
-              © 2026 SalaireDirect. Tous droits réservés.
+                <h3 className="mb-3 text-xl font-bold">{feature.title}</h3>
+                <p className="text-slate-300">{feature.text}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="rounded-3xl bg-gradient-to-r from-blue-700 to-blue-800 p-8 text-center sm:p-12 lg:p-16">
+            <h2 className="mb-4 text-3xl font-bold sm:text-4xl">Prêt à simplifier votre paie ?</h2>
+            <p className="mx-auto mb-8 max-w-2xl text-lg text-blue-100">
+              Créez votre compte en deux minutes et calculez votre première paie dès aujourd&apos;hui.
             </p>
-            <div className="flex items-center gap-6 text-sm text-slate-400">
-              <Link href="#" className="hover:text-white transition-colors">
-                Politique de confidentialité
-              </Link>
-              <Link href="#" className="hover:text-white transition-colors">
-                Conditions d'utilisation
-              </Link>
-            </div>
+            <Link
+              href="/auth/register"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 text-lg font-semibold text-blue-800 hover:bg-blue-50"
+            >
+              Commencer l&apos;essai gratuit
+              <ArrowRight className="h-5 w-5" aria-hidden="true" />
+            </Link>
           </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-slate-700/50 bg-slate-900/60">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-slate-300 sm:flex-row sm:px-6 lg:px-8">
+          <p>© {new Date().getFullYear()} SalaireDirect. Tous droits réservés.</p>
+          <nav aria-label="Informations légales">
+            <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+              <li>
+                <Link href="/legal/mentions-legales" className="inline-flex min-h-11 items-center underline hover:text-white">
+                  Mentions légales
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal/confidentialite" className="inline-flex min-h-11 items-center underline hover:text-white">
+                  Politique de confidentialité
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal/cgu" className="inline-flex min-h-11 items-center underline hover:text-white">
+                  Conditions d&apos;utilisation
+                </Link>
+              </li>
+            </ul>
+          </nav>
         </div>
       </footer>
     </div>
