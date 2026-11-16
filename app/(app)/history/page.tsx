@@ -195,6 +195,28 @@ export default function HistoryPage() {
                         Export CSV
                         <span className="sr-only"> {label}</span>
                       </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1 sm:flex-none"
+                        disabled={slips.length === 0}
+                        onClick={async () => {
+                          const toastId = toast.loading('Génération du récapitulatif…')
+                          try {
+                            await api.download(
+                              `/pdf/payroll-summary/${period.id}`,
+                              `recapitulatif-paie-${period.year}-${String(period.month).padStart(2, '0')}.pdf`
+                            )
+                            toast.success('Récapitulatif téléchargé', { id: toastId })
+                          } catch (err) {
+                            toast.error(errorMessage(err, 'Erreur lors du téléchargement'), { id: toastId })
+                          }
+                        }}
+                      >
+                        <FileText className="h-4 w-4" aria-hidden="true" />
+                        Récapitulatif PDF
+                        <span className="sr-only"> {label}</span>
+                      </Button>
                     </div>
                   </div>
 
