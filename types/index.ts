@@ -139,6 +139,13 @@ export interface PayrollCalculation {
   cnssEmployer: number
   ipr: number
   netSalary: number
+  items?: Array<{
+    label: string
+    item_type: 'earning' | 'deduction' | 'employer_charge' | 'info' | string
+    amount: number
+    currency: string
+    sort_order?: number
+  }>
 }
 
 export interface CalculateResponse {
