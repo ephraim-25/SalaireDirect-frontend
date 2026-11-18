@@ -1,14 +1,23 @@
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import "./globals.css"
-import { Toaster } from "react-hot-toast"
-import { AuthProvider } from "@/contexts/AuthContext"
-
-const inter = Inter({ subsets: ["latin"] })
+import type { Metadata, Viewport } from 'next'
+// Police auto-hébergée (aucune requête vers Google Fonts : conforme RGPD, plus rapide).
+import '@fontsource-variable/inter'
+import './globals.css'
+import { Toaster } from 'react-hot-toast'
+import { AuthProvider } from '@/contexts/AuthContext'
 
 export const metadata: Metadata = {
-  title: "SalaireDirect - Gestion de Paie Automatisée",
-  description: "Solution SaaS de gestion de la paie pour les structures en RD Congo",
+  title: {
+    default: 'SalaireDirect — Gestion de paie automatisée',
+    template: '%s · SalaireDirect',
+  },
+  description: 'Solution SaaS de gestion de la paie pour les PME, écoles et ONG en RD Congo.',
+  applicationName: 'SalaireDirect',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#1d4ed8',
 }
 
 export default function RootLayout({
@@ -18,29 +27,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className={inter.className}>
+      <body className="font-sans antialiased">
         <AuthProvider>
           {children}
           <Toaster
             position="top-center"
-            reverseOrder={false}
             gutter={8}
             toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#333',
-                color: '#fff',
-              },
-              success: {
-                style: {
-                  background: '#10b981',
-                },
-              },
-              error: {
-                style: {
-                  background: '#ef4444',
-                },
-              },
+              duration: 5000,
+              // Couleurs à contraste ≥ 4,5:1 avec le texte blanc (WCAG AA).
+              style: { background: '#1f2937', color: '#ffffff' },
+              success: { style: { background: '#047857', color: '#ffffff' } },
+              error: { style: { background: '#b91c1c', color: '#ffffff' } },
             }}
           />
         </AuthProvider>

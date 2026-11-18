@@ -6,28 +6,23 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
   subtitle?: string
 }
 
-const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className, title, subtitle, children, ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          'bg-white rounded-xl shadow-sm border border-gray-200 p-6',
-          className
-        )}
-        {...props}
-      >
-        {(title || subtitle) && (
-          <div className="mb-4">
-            {title && <h3 className="text-xl font-semibold text-gray-900">{title}</h3>}
-            {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
-          </div>
-        )}
-        {children}
-      </div>
-    )
-  }
-)
+const Card = forwardRef<HTMLDivElement, CardProps>(({ className, title, subtitle, children, ...props }, ref) => {
+  return (
+    <div
+      ref={ref}
+      className={cn('rounded-xl border border-gray-200 bg-white p-6 text-gray-900 shadow-sm', className)}
+      {...props}
+    >
+      {(title || subtitle) && (
+        <div className="mb-4">
+          {title && <h2 className="text-lg font-semibold text-gray-900">{title}</h2>}
+          {subtitle && <p className="mt-1 text-sm text-gray-600">{subtitle}</p>}
+        </div>
+      )}
+      {children}
+    </div>
+  )
+})
 
 Card.displayName = 'Card'
 

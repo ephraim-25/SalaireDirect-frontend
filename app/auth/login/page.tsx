@@ -1,115 +1,106 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Lock, Mail, ArrowRight } from 'lucide-react'
-import Input from '@/components/ui/Input'
-import Button from '@/components/ui/Button'
+import { Suspense, useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { ArrowRight, Lock, Mail } from 'lucide-react'
 import toast from 'react-hot-toast'
+import AuthShell from '@/components/auth/AuthShell'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
 import { useAuth } from '@/contexts/AuthContext'
+import { translateAuthError } from '@/lib/authErrors'
+import { safeRedirectPath } from '@/lib/utils'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
-  const { signIn } = useAuth()
+  const searchParams = useSearchParams()
+  const redirectTo = safeRedirectPath(searchParams.get('redirect'))
+  const { signIn, user, loading } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
+  // Une personne déjà connectée n'a pas à revoir le formulaire.
+  useEffect(() => {
+    if (!loading && user) router.replace(redirectTo)
+  }, [loading, user, router, redirectTo])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-
     try {
-      await signIn(email, password)
+      await signIn(email.trim(), password)
       toast.success('Connexion réussie')
-      router.push('/dashboard')
-    } catch (error: any) {
-      toast.error(error.message || 'Erreur lors de la connexion')
+      router.push(redirectTo)
+    } catch (error) {
+      toast.error(translateAuthError(error))
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Logo and Title */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
-              <Lock className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">SalaireDirect</h1>
-            <p className="text-gray-600 mt-2">Connectez-vous à votre espace</p>
-          </div>
+    <AuthShell
+      title="Connexion"
+      subtitle="Accédez à votre espace de paie"
+      icon={<Lock className="h-8 w-8" />}
+      footer={
+        <p>
+          Pas encore de compte ?{' '}
+          <Link href="/auth/register" className="font-medium text-blue-800 underline hover:text-blue-900">
+            Créer un compte
+          </Link>
+        </p>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <Input
+          type="email"
+          label="Adresse e-mail"
+          placeholder="vous@entreprise.com"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          icon={<Mail className="h-5 w-5" />}
+        />
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <Input
-              type="email"
-              label="Email"
-              placeholder="votre@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              icon={<Mail className="w-5 h-5 text-gray-400" />}
-            />
+        <Input
+          type="password"
+          label="Mot de passe"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          icon={<Lock className="h-5 w-5" />}
+        />
 
-            <Input
-              type="password"
-              label="Mot de passe"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              icon={<Lock className="w-5 h-5 text-gray-400" />}
-            />
-
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="ml-2 text-gray-600">Se souvenir de moi</span>
-              </label>
-              <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">
-                Mot de passe oublié ?
-              </a>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                'Connexion en cours...'
-              ) : (
-                <>
-                  Se connecter
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </>
-              )}
-            </Button>
-          </form>
-
-          {/* Footer */}
-          <div className="mt-6 text-center text-sm text-gray-600">
-            <p>
-              Pas encore de compte ?{' '}
-              <a href="/auth/register" className="text-blue-600 hover:text-blue-700 font-medium">
-                Créer un compte
-              </a>
-            </p>
-          </div>
+        <div className="text-right text-sm">
+          <Link href="/auth/forgot-password" className="font-medium text-blue-800 underline hover:text-blue-900">
+            Mot de passe oublié ?
+          </Link>
         </div>
 
-        {/* Security Notice */}
-        <div className="mt-6 text-center text-xs text-gray-500">
-          <p>🔒 Connexion sécurisée • Vos données sont protégées</p>
-        </div>
-      </div>
-    </div>
+        <Button type="submit" className="w-full" loading={isLoading}>
+          {isLoading ? (
+            'Connexion en cours…'
+          ) : (
+            <>
+              Se connecter
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </>
+          )}
+        </Button>
+      </form>
+    </AuthShell>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   )
 }
